@@ -1,0 +1,50 @@
+version: '3.8'
+
+services:
+  db-train:
+    image: postgres:16
+    container_name: db-train
+    environment:
+      POSTGRES_DB: train
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: "1"
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./pg-dumps:/docker-entrypoint-initdb.d
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - train
+
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: pgadmin
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@local.com
+      PGADMIN_DEFAULT_PASSWORD: MyPgAdminPass123!
+    ports:
+      - "8080:80"
+    volumes:
+      - pgadmin-data:/var/lib/pgadmin
+    networks:
+      - train
+    depends_on:
+      - db-train
+
+  train-back:
+    build: .
+    container_name: train-back
+    ports:
+      - "8000:8000"
+    networks:
+      - train
+    depends_on:
+      - db-train
+
+volumes:
+  postgres_data:
+  pgadmin-data:
+
+networks:
+  train:
+    driver: bridge

@@ -88,7 +88,7 @@ DATABASES = {
         'NAME': 'train',
         'USER': 'postgres',
         'PASSWORD': '1',
-        'HOST': 'localhost', #'HOST': 'db-train',
+        'HOST': 'db-train', #'HOST': 'localhost',
         'PORT': '5432',
     }
 }

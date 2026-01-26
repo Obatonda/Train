@@ -1,35 +1,44 @@
-# Dockerfile — для разработки
 FROM python:3.11-slim
 
+# Окружение
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
-ENV DJANGO_SETTINGS_MODULE=train.settings
+ENV DJANGO_SETTINGS_MODULE=Train.settings
 ENV DEBUG=1
 
-# 1. Создаём пользователя (без chown — он не нужен, если мы переключимся до COPY)
+# 1. Устанавливаем системные зависимости для psycopg2
+RUN apt-get update && apt-get install -y \
+    gcc \
+    libpq-dev \
+    python3-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+# 2. Создаём пользователя
 RUN useradd --create-home --shell /bin/bash admin
 
-# 2. Переключаемся на пользователя ДО копирования файлов
+# 3. Переключаемся на пользователя ДО копирования файлов
 USER admin
 
-# 3. Создаём рабочую директорию — теперь она будет принадлежать admin
+# 4. Создаём рабочую директорию
 WORKDIR /app
 
-# 4. Копируем зависимости и устанавливаем их (файлы уже от admin)
+# 5. Копируем зависимости и устанавливаем их
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Устанавливаем дополнения для разработки
+# 6. Устанавливаем дополнения для разработки
 RUN pip install --no-cache-dir django-debug-toolbar ipython
 
-# 5. Копируем код — теперь он копируется от имени admin, а не root
+# 7. Копируем код
 COPY . .
 
-# Открываем порт
+# 8. Открываем порт
 EXPOSE 8000
 
-# Запускаем runserver с авто-перезагрузкой и отладкой
+# 9. Запускаем сервер
 CMD ["python", "manage.py", "runserver", "0.0.0.0:8000"]
+
+
 
 
 
