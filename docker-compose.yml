@@ -15,6 +15,12 @@ services:
       - postgres_data:/var/lib/postgresql/data
     networks:
       - train
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d train"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 10s
 
   pgadmin:
     image: dpage/pgadmin4:latest
@@ -29,17 +35,42 @@ services:
     networks:
       - train
     depends_on:
-      - db-train
+      db-train:
+        condition: service_healthy
 
   train-back:
-    build: .
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: train-back:0.01
     container_name: train-back
     ports:
       - "8000:8000"
     networks:
       - train
     depends_on:
-      - db-train
+      db-train:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "manage.py", "check", "--database=default"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+  train-front:
+    build:
+      context: ../train_front
+      dockerfile: Dockerfile
+    image: train-front:latest
+    container_name: train-front
+    ports:
+      - "1024:8050"
+    networks:
+      - train
+    depends_on:
+      train-back:
+        condition: service_healthy
 
 volumes:
   postgres_data:
@@ -47,4 +78,5 @@ volumes:
 
 networks:
   train:
+    name: train
     driver: bridge
