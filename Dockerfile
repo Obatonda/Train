@@ -1,12 +1,21 @@
 FROM python:3.11-slim
 
 # Окружение
-ENV PYTHONDONTWRITEBYTECODE=1
-ENV PYTHONUNBUFFERED=1
-ENV DJANGO_SETTINGS_MODULE=Train.settings
-ENV DEBUG=1
 
-# 1. Устанавливаем системные зависимости для psycopg2
+#Отключает создание файлов .pyc
+ENV PYTHONDONTWRITEBYTECODE=1
+#Отключает буферизацию вывода Python(логи)
+ENV PYTHONUNBUFFERED=1
+#Указывает Django, какой файл настроек использовать
+ENV DJANGO_SETTINGS_MODULE=Train.settings
+
+
+# 1. Устанавливаем системные зависимости
+# Обновляет список доступных пакетов и их версий из репозиториев и устанавливает их
+# Компилятор для языков C/C++
+# Для работы с БД через psycopg2 в Python
+# Позволяют компилировать расширения и устанавливать пакеты, требующие сборки
+# Удаляет кэш списков пакетов после установки
 RUN apt-get update && apt-get install -y \
     gcc \
     libpq-dev \
@@ -16,29 +25,27 @@ RUN apt-get update && apt-get install -y \
 # 2. Создаём пользователя
 RUN useradd --create-home --shell /bin/bash admin
 
-# 3. Переключаемся на пользователя ДО копирования файлов
-USER admin
-
-# 4. Создаём рабочую директорию
+# 3. Создаём рабочую директорию
 WORKDIR /app
 
-# 5. Копируем зависимости и устанавливаем их
-COPY requirements.txt .
+# 4. Копируем зависимости и устанавливаем их
+COPY --chown=admin:admin requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# 6. Устанавливаем дополнения для разработки
+# 5. Устанавливаем дополнения для разработки (только для dev!)
 RUN pip install --no-cache-dir django-debug-toolbar ipython
 
-# 7. Копируем код
-COPY . .
+# 6. Копируем код с правильными правами
+COPY --chown=admin:admin . .
+
+# 7. Переключаемся на пользователя
+USER admin
 
 # 8. Открываем порт
 EXPOSE 8000
 
 # 9. Запускаем сервер
 CMD ["python", "manage.py", "runserver", "0.0.0.0:8000"]
-
-
 
 
 
